@@ -7,19 +7,38 @@ use std::boxed::Box;
 #[derive(Clone)]
 pub struct FilterLogger {
     level: log::Level,
-    filter: Vec<String>,
+    mod_filter: Vec<String>,
     body_filter: Vec<String>,
+    format: String,
 }
 
 impl FilterLogger
 {
     pub fn init(level: log::Level,
-                filter: Vec<String>,
-                body_filter: Vec<String>) -> Self {
+                mod_filter: Vec<String>,
+                body_filter: Vec<String>,) -> Self {
         let logger = FilterLogger {
             level,
-            filter,
+            mod_filter,
             body_filter,
+            format: "%Y-%m-%d %H:%M:%S%z".into(),
+        };
+
+        let _ = log::set_boxed_logger(Box::new(logger.clone()));
+        log::set_max_level(level.to_level_filter());
+
+        logger
+    }
+
+    pub fn with_format(level: log::Level,
+                       mod_filter: Vec<String>,
+                       body_filter: Vec<String>,
+                       format: String) -> Self {
+        let logger = FilterLogger {
+            level,
+            mod_filter,
+            body_filter,
+            format,
         };
 
         let _ = log::set_boxed_logger(Box::new(logger.clone()));
@@ -38,7 +57,7 @@ impl log::Log for FilterLogger {
         let now = chrono::Utc::now();
         let skip = record.module_path()
             .map(|m| {
-                self.filter.iter()
+                self.mod_filter.iter()
                     .filter(|f| m.contains(*f))
                     .next()
                     .is_some()
@@ -52,7 +71,7 @@ impl log::Log for FilterLogger {
                 .is_some();
         if !skip && !body_skip {
             rt_println!("{time} {level} [{module}] {body}",
-                        time = now.format("%Y-%m-%d %H:%M:%S%z"),
+                        time = now.format(self.format.as_ref()),
                         level = record.level(),
                         module = record.module_path().unwrap_or("default"),
                         body = msg_str).unwrap();

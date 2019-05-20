@@ -1,7 +1,7 @@
 [package]
 name = "filter-logger"
 description = "A simple filtering logger which will filter based on module-path."
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Michael Micucci <micucci@fox-den.org>"]
 edition = "2018"
 repository = "http://github.com/kitsuneninetails/filter-logger-rust"

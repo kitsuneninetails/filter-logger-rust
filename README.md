@@ -49,3 +49,20 @@ The output will be:
 The filters are a simple string check on either the `module_path()` or the `args()` parameter 
 of the record object passed into the `log()` function.
 
+## Date-time Format
+
+The format can be changed by using the `with_format` function instead of `init`:
+
+```rust
+extern crate filter_logger;
+#[macro_use] extern crate log;
+
+use filter_logger::FilterLogger;
+
+#[test]
+fn test() {
+    FilterLogger::with_format(log::Level::Info, vec![], vec![], "%Y%m%dT%H%M%S%z");
+    info!("Should use RFC 3339 format!");
+}
+```
+
