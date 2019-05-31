@@ -1,5 +1,4 @@
 extern crate chrono;
-#[macro_use] extern crate runtime_fmt;
 #[macro_use] extern crate log;
 
 use std::boxed::Box;
@@ -70,11 +69,11 @@ impl log::Log for FilterLogger {
                 .next()
                 .is_some();
         if !skip && !body_skip {
-            rt_println!("{time} {level} [{module}] {body}",
-                        time = now.format(self.format.as_ref()),
-                        level = record.level(),
-                        module = record.module_path().unwrap_or("default"),
-                        body = msg_str).unwrap();
+            println!("{time} {level} [{module}] {body}",
+                     time = now.format(self.format.as_ref()),
+                     level = record.level(),
+                     module = record.module_path().unwrap_or("default"),
+                     body = msg_str);
         }
     }
 
