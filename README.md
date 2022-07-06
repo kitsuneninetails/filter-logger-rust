@@ -51,7 +51,8 @@ of the record object passed into the `log()` function.
 
 ## Date-time Format
 
-The format can be changed by using the `with_format` function instead of `init`:
+The format can be changed by using the `with_format` function instead of `init`. \
+See [the time library book](https://time-rs.github.io/book/api/format-description.html) for format descriptions.
 
 ```rust
 extern crate filter_logger;
@@ -61,7 +62,7 @@ use filter_logger::FilterLogger;
 
 #[test]
 fn test() {
-    FilterLogger::with_format(log::Level::Info, vec![], vec![], "%Y%m%dT%H%M%S%z");
+    FilterLogger::with_format(log::Level::Info, vec![], vec![], "[year][month][day]T[hour][minute][second][offset_hour sign:mandatory][offset_minute]");
     info!("Should use RFC 3339 format!");
 }
 ```

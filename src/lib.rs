@@ -1,5 +1,6 @@
-extern crate chrono;
-#[macro_use] extern crate log;
+extern crate time;
+#[macro_use]
+extern crate log;
 
 use std::boxed::Box;
 
@@ -11,16 +12,13 @@ pub struct FilterLogger {
     format: String,
 }
 
-impl FilterLogger
-{
-    pub fn init(level: log::Level,
-                mod_filter: Vec<String>,
-                body_filter: Vec<String>,) -> Self {
+impl FilterLogger {
+    pub fn init(level: log::Level, mod_filter: Vec<String>, body_filter: Vec<String>) -> Self {
         let logger = FilterLogger {
             level,
             mod_filter,
             body_filter,
-            format: "%Y-%m-%d %H:%M:%S%z".into(),
+	        format: "[year]-[month]-[day] [hour]:[minute]:[second][offset_hour sign:mandatory][offset_minute]".into(),
         };
 
         let _ = log::set_boxed_logger(Box::new(logger.clone()));
@@ -29,10 +27,12 @@ impl FilterLogger
         logger
     }
 
-    pub fn with_format(level: log::Level,
-                       mod_filter: Vec<String>,
-                       body_filter: Vec<String>,
-                       format: String) -> Self {
+    pub fn with_format(
+        level: log::Level,
+        mod_filter: Vec<String>,
+        body_filter: Vec<String>,
+        format: String,
+    ) -> Self {
         let logger = FilterLogger {
             level,
             mod_filter,
@@ -53,32 +53,39 @@ impl log::Log for FilterLogger {
     }
 
     fn log(&self, record: &log::Record) {
-        let now = chrono::Utc::now();
-        let skip = record.module_path()
+        let now = time::OffsetDateTime::now_utc();
+        let skip = record
+            .module_path()
             .map(|m| {
-                self.mod_filter.iter()
+                self.mod_filter
+                    .iter()
                     .filter(|f| m.contains(*f))
                     .next()
                     .is_some()
             })
             .unwrap_or(false);
         let msg_str = format!("{}", record.args());
-        let body_skip =
-            self.body_filter.iter()
-                .filter(|f| msg_str.contains(*f))
-                .next()
-                .is_some();
+        let body_skip = self
+            .body_filter
+            .iter()
+            .filter(|f| msg_str.contains(*f))
+            .next()
+            .is_some();
         if !skip && !body_skip {
-            println!("{time} {level} [{module}] {body}",
-                     time = now.format(self.format.as_ref()),
-                     level = record.level(),
-                     module = record.module_path().unwrap_or("default"),
-                     body = msg_str);
+            let time = time::format_description::parse(&self.format)
+                .map_err(|_| time::error::Format::InvalidComponent(""))
+                .and_then(|format| now.format(&format))
+                .unwrap_or(now.to_string());
+            println!(
+                "{time} {level} [{module}] {body}",
+                level = record.level(),
+                module = record.module_path().unwrap_or("default"),
+                body = msg_str
+            );
         }
     }
 
-    fn flush(&self) {
-    }
+    fn flush(&self) {}
 }
 
 #[cfg(test)]
@@ -121,7 +128,11 @@ mod tests {
 
     #[test]
     fn test_filter() {
-        FilterLogger::init(log::Level::Info, vec!["test2".to_string()], vec!["test error".to_string()]);
+        FilterLogger::init(
+            log::Level::Info,
+            vec!["test2".to_string()],
+            vec!["test error".to_string()],
+        );
         println!("test_filter = 1 Good Expected (INFO, module='test1')");
         test1::log_it();
         test2::log_it();
